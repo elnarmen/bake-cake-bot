@@ -13,7 +13,7 @@ from service_functions import *
 
 USER_FULLNAME, PHONE_NUMBER, END_AUTH, PERSONAL_ACCOUNT, CHOICE_ORDER, \
 CAKE_SHAPE, TOPPING, BERRIES, DECOR, INSCRIPTION, ORDER_COMMENT, ADDRESS, \
-DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU, SUCCESSFUL = range(18)
+DELIVERY_DATE, DELIVERY_TIME, ORDER_SAVING, PRINT_ORDER, ORDER_MENU = range(17)
 
 SELF_STORAGE_AGREEMENTS: str = 'documents/sample.pdf'
 
@@ -151,7 +151,7 @@ def push_user_orders(update: Update, context: CallbackContext):
                                             reply_markup=markup)
     else:
         update.effective_message.reply_text(
-            'Выберите номер заказа. Кол-во заказов: ' + str(count_order_id),
+            'Выберите номер заказа',
             reply_markup=markup)
     return CHOICE_ORDER
 
@@ -176,8 +176,8 @@ def get_amount_of_layers(update: Update, context: CallbackContext) -> int:
     update.message.reply_text(f'''
     Выберите количество ярусов торта
     1 уровень      {PRICES['1']}р
-    2 уровень      {PRICES['1']}р
-    3 уровень      {PRICES['1']}р
+    2 уровень      {PRICES['2']}р
+    3 уровень      {PRICES['3']}р
     ''',
                               reply_markup=markup)
 
@@ -525,10 +525,6 @@ def cancel_auth(update: Update, context: CallbackContext) -> None:
         reply_markup=markup)
     return ConversationHandler.END
 
-def get_updates(offset=0):
-    result = requests.get(f"https://api.telegram.org/bot{os.getenv('TELEGRAM_TOKEN')}/getUpdates?offset={offset}").json()
-    return result['result']
-
 
 def start_without_shipping_callback(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
@@ -556,16 +552,9 @@ def start_without_shipping_callback(update: Update, context: CallbackContext) ->
 def precheckout_callback(update: Update, context: CallbackContext) -> None:
     query = update.pre_checkout_query
     if query.invoice_payload != 'Custom-Payload':
-        print(query.invoice_payload)
         query.answer(ok=False, error_message="Something went wrong...")
     else:
         query.answer(ok=True)
-
-    return SUCCESSFUL
-
-
-def successful_payment_callback(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Спасибо. Ваш платеж поступил")
 
 
 def delete_order(update: Update, context: CallbackContext):
@@ -659,10 +648,6 @@ if __name__ == '__main__':
                 MessageHandler(Filters.regex('^Личный кабинет$'), start),
                 MessageHandler(Filters.regex('^Удалить$'), delete_order),
             ],
-
-            SUCCESSFUL: [
-                MessageHandler(Filters.successful_payment, successful_payment_callback)
-            ]
         },
         fallbacks=[MessageHandler(Filters.regex('^Стоп$'), start)],
     )
