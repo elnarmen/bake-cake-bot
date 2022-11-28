@@ -60,6 +60,8 @@ ORDER_DESCRIPTIONS = [
     'Время доставки:',
     'Стоимость:',
 ]
+#<<<<<<< main
+#=======
 
 
 # logging.basicConfig(
@@ -67,7 +69,8 @@ ORDER_DESCRIPTIONS = [
 # )
 #
 # logger = logging.getLogger(__name__)
-
+#>>>>>>> main
+#
 
 def start(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
@@ -96,13 +99,14 @@ def start(update: Update, context: CallbackContext) -> int:
 
         menu_msg = create_start_message_exist_user(user.name)
         update.effective_message.reply_text(menu_msg, reply_markup=markup)
+        if 'ammount_of_layers' in context.user_data:
+            context.user_data.clear()
         return PERSONAL_ACCOUNT
 
 
 def get_fullname(update: Update, context: CallbackContext) -> int:
     context.user_data['choice'] = 'Имя и фамилия'
     update.message.reply_text(f'Введите имя и фамилию:')
-
     return PHONE_NUMBER
 
 
@@ -136,7 +140,6 @@ def get_phone_number(update: Update, context: CallbackContext):
     return END_AUTH
 
 
-# Если пользователь зарегистрирован - return PERSONAL_ACCOUNT из функции start
 def push_user_orders(update: Update, context: CallbackContext):
     with open(SELF_STORAGE_USER_ORDERS, 'rb') as json_file:
         usr_orders = json.load(json_file)
@@ -387,6 +390,8 @@ def save_order(update: Update, context: CallbackContext) -> int:
         update.message.reply_text('Некорректное время')
         return get_delivery_time_2(update, context)
     save_time(update, context)
+    if 'order' in context.user_data:
+        del context.user_data['order']
     user_data = context.user_data
     user_id = update.effective_user.id
     users = database_read_users_order()
@@ -462,7 +467,6 @@ def print_order(update: Update, context: CallbackContext) -> int:
                         order = i
                         break
     order_details = ''
-
     for i, v in zip(ORDER_DESCRIPTIONS, order.values()):
         order_details += f"{i} {v if v else '-'}\n"
     message_keyboard = [['Удалить', 'Оплатить'],
@@ -579,6 +583,7 @@ if __name__ == '__main__':
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
+        allow_reentry=True,
         states={
             USER_FULLNAME: [
                 MessageHandler(Filters.regex('^(✅ Согласен)$'), get_fullname),
@@ -589,7 +594,7 @@ if __name__ == '__main__':
                 MessageHandler(Filters.text, end_auth),
             ],
             PERSONAL_ACCOUNT: [
-                MessageHandler(Filters.regex('^Собрать торт$'),
+                MessageHandler(Filters.regex('^(Собрать торт)$'),
                                get_amount_of_layers),
                 MessageHandler(Filters.regex('^(Мои заказы)$'),
                                push_user_orders),
@@ -658,5 +663,3 @@ if __name__ == '__main__':
     dispatcher.add_handler(CommandHandler("start", start))
     updater.start_polling()
     updater.idle()
-
-
